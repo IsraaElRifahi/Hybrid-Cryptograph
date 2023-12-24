@@ -4,7 +4,8 @@ from Crypto.Cipher import DES3
 from Crypto.Hash import SHA256
 import tkinter as tk
 from tkinter import Label, Button, messagebox, filedialog, Entry
-
+from Crypto.Util.Padding import pad
+import time
 def generate_elgamal_public_key(p, g, private_key):
     return pow(g, private_key, p)
 
@@ -54,15 +55,20 @@ class VideoEncryptionGUI:
                 hashed_key = hash_key(str(self.shared_key).encode())
                 key = hashed_key[:24]
 
-                padded_video_data = pad_data(video_data)
+                padded_video_data = pad(video_data, DES3.block_size)
                 cipher = DES3.new(key, DES3.MODE_ECB)
+
+                start_time = time.time()
                 encrypted_video_data = cipher.encrypt(padded_video_data)
+                end_time = time.time()
 
                 output_file_path = filedialog.asksaveasfilename(defaultextension=".enc")
                 with open(output_file_path, "wb") as f:
                     f.write(encrypted_video_data)
 
-                messagebox.showinfo("Encryption", "Video encrypted successfully!")
+                elapsed_time = end_time - start_time
+
+                messagebox.showinfo("Encryption", f"Video encrypted successfully!\nTime taken: {elapsed_time:.2f} seconds")
             except Exception as e:
                 messagebox.showerror("Encryption Error", f"Error during encryption: {e}")
         else:
