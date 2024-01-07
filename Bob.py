@@ -6,6 +6,7 @@ import tkinter as tk
 from tkinter import Label, Button, messagebox, filedialog, Entry
 from Crypto.Util.Padding import pad
 import time
+
 def generate_elgamal_public_key(p, g, private_key):
     return pow(g, private_key, p)
 
@@ -30,43 +31,39 @@ def hash_key(key):
     hash_object = SHA256.new(data=key)
     return hash_object.digest()
 
-def pad_data(data):
-    padding_length = 8 - (len(data) % 8)
-    padding = bytes([padding_length]) * padding_length
-    return data + padding
-
 class VideoEncryptionGUI:
     def __init__(self, master, shared_key):
         self.master = master
-        master.title("Video Encryption and Decryption")
+        master.title("Video Encryption")
 
-        self.shared_key = shared_key
+        self.shared_key = shared_key  #stores the shared_key (common key) for encryption
 
         self.encrypt_button = Button(master, text="Encrypt Video", command=self.encrypt_video)
         self.encrypt_button.pack()
 
     def encrypt_video(self):
-        file_path = filedialog.askopenfilename()
-        if file_path:
+        file_path = filedialog.askopenfilename() #open file to select a video
+        if file_path:   #check if file path is selected 
             try:
-                with open(file_path, "rb") as f:
-                    video_data = f.read()
+                with open(file_path, "rb") as f:   #opens the selected file in binary
+                    video_data = f.read()          #reads the contents of the selected file 
 
-                hashed_key = hash_key(str(self.shared_key).encode())
-                key = hashed_key[:24]
+                hashed_key = hash_key(str(self.shared_key).encode()) #Generates a hashed key based on the shared_key provided
+                key = hashed_key[:24]  # Truncates the hashed key to 24 bytes (for DES3 encryption)
 
                 padded_video_data = pad(video_data, DES3.block_size)
-                cipher = DES3.new(key, DES3.MODE_ECB)
+                cipher = DES3.new(key, DES3.MODE_ECB)   #Initializes a DES3 cipher object for decryption using the derived key
 
-                start_time = time.time()
-                encrypted_video_data = cipher.encrypt(padded_video_data)
-                end_time = time.time()
+                start_time = time.time()   #Records the start time for measuring encryption time
+                encrypted_video_data = cipher.encrypt(padded_video_data)  #Removes padding from the decrypted data
+                end_time = time.time()   #Records the end time after encryption
 
-                output_file_path = filedialog.asksaveasfilename(defaultextension=".enc")
+                output_file_path = filedialog.asksaveasfilename(defaultextension=".enc")    # to save the decrypted video with a default extension of ".mp4"
                 with open(output_file_path, "wb") as f:
-                    f.write(encrypted_video_data)
+                    f.write(encrypted_video_data)    #Writes the encrypted video data to the output file
 
-                elapsed_time = end_time - start_time
+
+                elapsed_time = end_time - start_time   #Calculates the elapsed time for decryption 
 
                 messagebox.showinfo("Encryption", f"Video encrypted successfully!\nTime taken: {elapsed_time:.2f} seconds")
             except Exception as e:
@@ -85,12 +82,12 @@ class BobGUI:
         master.geometry("300x200")  # Set the size of the window
         master.configure(bg="lightblue")  # Set background color
 
-        self.prime_label = Label(master, text="Prime:")
+        self.prime_label = Label(master, text="Prime Number:")
         self.prime_label.pack()
         self.prime_entry = Entry(master, width=30)
         self.prime_entry.pack()
 
-        self.generator_label = Label(master, text="Generator:")
+        self.generator_label = Label(master, text="Primitive Element:")
         self.generator_label.pack()
         self.generator_entry = Entry(master, width=30)
         self.generator_entry.pack()
@@ -111,7 +108,7 @@ class BobGUI:
 
             bob_r, _, triple_des_key = self.perform_key_exchange(generator, prime, alice_public_key)
 
-            messagebox.showinfo("Key Exchange", f"Shared Key from Bob to Alice: {triple_des_key}")
+            messagebox.showinfo("Common Key", f"Shared Key of Bob: {triple_des_key}")
 
             self.master.destroy()  # Close Bob GUI
 
