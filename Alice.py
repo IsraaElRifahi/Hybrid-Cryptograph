@@ -13,18 +13,17 @@ def generate_elgamal_key(bits): #bits= bit length for the prime number (p)
     # Find a generator g (primitive root modulo p)
     while True:
         g = random.randint(2, p-1) 
-        if all(pow(g, i, p) != 1 for i in range(1, p-1)): #check if g=primitive to p / (pow(g, i, p)=g^i mod p) 
-                                                          #g is a primitive root modulo p, then g^i mod p should not equal 1 for any i in the range from 1 to p-1. 
-                                                          #This condition indicates that g generates a complete set of residues modulo p.
-                                                          #(Check if g is primitive if all g^i mod p is not qual to 1)
+        if all(square_and_multiply(g, i, p) != 1 for i in range(1, p-1)): #(Check if g is primitive if all g^i mod p is not equal to 1)
             break
     return p, g 
 
 def generate_elgamal_public_key(p, g, private_key): #private key is generated in the GUI
-    return pow(g, private_key, p) #(public_key= g^private_key mod p)
+    return square_and_multiply(g, private_key, p) #(public_key= g^private_key mod p)
 
-#for handling large numbers 
+#for handling large numbers mod p
 def square_and_multiply(base, exponent, modulus): #base^exponent mod modulus. Square and multiply if the value=1
+                                                  #1)Convert exponent into binary. 
+                                                  #2)quaring or multiplying the base depending on the current bit of the exponent (1=Square,MUL/ 0=Square)
     result = 1
     base = base % modulus
 
@@ -41,9 +40,10 @@ def elgamal_key_exchange(sender_private_key, receiver_public_key, prime):
     shared_key = square_and_multiply(receiver_public_key, sender_private_key, prime) #B^private_key mod p
     return shared_key
 
-def hash_key(key): #key=input data that needs to be hashed/ 64 round ( to add security feature for the video)
+def hash_key(key): #key=input data that needs to be hashed/ 64 round ( to add security feature for the video in encryption)
     hash_object = SHA256.new(data=key)
     return hash_object.digest() #return byte string
+
 
 class VideoDecryptionGUI:
     def __init__(self, master, shared_key): #for GUI
@@ -62,7 +62,8 @@ class VideoDecryptionGUI:
                 with open(file_path, "rb") as f: #opens the selected file in binary
                     encrypted_video_data = f.read() #reads the contents of the selected file 
 
-                hashed_key = hash_key(str(self.shared_key).encode()) #Generates a hashed key based on the shared_key provided
+                hashed_key = hash_key(str(self.shared_key).encode()) #Generates a hashed key(that is converted into byte number) 
+                                                                     #based on the shared_key provided
                 key = hashed_key[:24] # Truncates the hashed key to 24 bytes (for DES3 encryption)
 
                 cipher = DES3.new(key, DES3.MODE_ECB) #Initializes a DES3 cipher object for decryption using the derived key
@@ -99,7 +100,7 @@ class AliceGUI:
 
 #Generation of prime (p), primitive(g), private key and public key
     def generate_keys_and_exchange(self):
-        bits = 20
+        bits = 20 #the bit should be greater than or equal 1024, bit it takes time to execute so we put a small number to fast the execution
         prime, generator = generate_elgamal_key(bits)
         alice_private_key = random.randint(2, prime-1)
         alice_public_key = generate_elgamal_public_key(prime, generator, alice_private_key)

@@ -7,8 +7,9 @@ from tkinter import Label, Button, messagebox, filedialog, Entry
 from Crypto.Util.Padding import pad
 import time
 
+
 def generate_elgamal_public_key(p, g, private_key):
-    return pow(g, private_key, p)
+    return square_and_multiply(g, private_key, p)
 
 def square_and_multiply(base, exponent, modulus):
     result = 1
